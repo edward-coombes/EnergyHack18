@@ -1,0 +1,279 @@
+<html>
+
+<head>
+<style>
+#billDisplay {
+	position: fixed;
+	z-index:-9;
+	top: 5em;
+	left: 5em;
+	font-size:28px;
+	height: 20em;
+	width:30em;
+}
+
+#P1{
+	top:0;
+	left:0;
+}
+#P2{
+	top:0;
+	background-color:#0f0;
+	right:0;
+}
+#P3{
+	bottom:0;
+	left:0;
+}
+#P4{
+	background-color:#0f0;
+	bottom:0;
+	right:0;
+}
+#graphContainer{
+	position:fixed;
+	left: 35%;
+	text-align:center;
+	margin:0 auto;
+	padding:1em;
+	width:32em;
+	height:32em;
+	/*transform: scale(0.7);
+	/*height:45em;*/
+}
+.prosumer{
+	position: absolute;
+	width: 128px;
+	height: 128px;
+	border-radius:64px;
+	background-color: #2980B9;
+	z-index:50;
+	line-height:120px;
+}
+
+.edgeHorizontal{
+	position:absolute;
+	height: 16px;
+	width: 90%;
+	background-color:#c00;
+	z-index:5;
+	text-align: center;
+	color: #fff;
+}
+#edgeP1P2{
+	top:64px;
+}
+
+#edgeP3P4{
+	bottom:64px;
+}
+
+.edgeVertical {
+	position:absolute;
+	height: 90%;
+	width: 16px;
+	background-color:#c00;
+	z-index:5;
+	text-align: center;
+	color: #fff;
+}
+#edgeP1P3{
+	left: 32px;
+}
+
+#edgeP2P4{
+	right: 32px;
+}
+.edgeDiagonalForward {
+	height: 125%;
+	width: 16px;
+	bottom:-64px;
+	left:50%;
+	z-index:5;
+	background-color:#cc0000;
+	position: absolute;
+	transform: skewY(45deg);
+	transform: rotate(45deg);
+	text-align: center;
+	color: #fff;
+}
+
+.edgeDiagonalBackward{
+	height: 125%;
+	width: 16px;
+	position: absolute;
+	top:-64px;
+	left:50%;
+	z-index: 5;
+	background-color:#cc0000;
+	transform: skewY(-45deg);
+	transform: rotate(-45deg);
+	text-align: center;
+	color: #fff;
+}
+</style>
+<meta charset="utf-8">
+</head>
+
+<body>
+<div id="graphContainer">
+<div id="P1" class="prosumer">P1</div>
+<div id="P2" class="prosumer">P2</div>
+<div id="P3" class="prosumer">P3</div>
+<div id="P4" class="prosumer">P4</div>
+
+<div id="edgeP1P2" class="edgeHorizontal"></div>
+<div id="edgeP1P3" class="edgeVertical"></div>
+<div id="edgeP1P4" class="edgeDiagonalBackward"></div>
+<div id="edgeP2P3" class="edgeDiagonalForward"></div>
+<div id="edgeP2P4" class="edgeVertical"></div>
+<div id="edgeP3P4" class="edgeHorizontal"></div>
+</div>
+
+<div id="modelParameters" style="float:right;z-index:-9;padding:4px;;">
+Real-Time Selling Price:
+<br>
+<ul>
+	<li>P2: 1.7 ether </li>
+	<li>P4: 2.0 ether </li>
+</ul>
+<br>
+Selling Units:
+<br>
+<ul>
+	<li>P2: 7 kw</li>
+	<li>P4: 12 kw</li>
+</ul>
+<br>
+Buying Units:
+<br>
+<ul>
+	<li>P1: 8 kw</li>
+	<li>P3: 11 kw</li>
+</ul>
+<br>
+Ceiling Price:
+<br>
+<ul>
+	<li>P1: 3.0 ether </li>
+	<li>P3: 2.5 ether </li>
+</ul>
+<br>
+Buying Priority:
+<br>
+<ul>
+	<li>P1: 3</li>
+	<li>P3: 1</li>
+</ul>
+</div>
+
+<div id="billDisplay"></div>
+<script>
+var bill = document.getElementById("billDisplay");
+
+var P3 = document.getElementById("P3");
+var P4 = document.getElementById("P4");
+var P1 = document.getElementById("P1");
+var P2 = document.getElementById("P2");
+
+var E12 = document.getElementById("edgeP1P2");
+var E13 = document.getElementById("edgeP1P3");
+var E14 = document.getElementById("edgeP1P4");
+var E23 = document.getElementById("edgeP2P3");
+var E24 = document.getElementById("edgeP2P4");
+var E34 = document.getElementById("edgeP3P4");
+
+var eList = [E12,E13,E14,E23,E24,E34];
+
+var green = "#090";
+var blue = "#2980B9";
+var red = "#c00";
+var defaultColor = red;
+
+var billP3 = "------------------<br>" +
+"Buyer Node: 3<br>" +
+"Seller Node: 2<br>" +
+"Electricity Units: 7<br>"+
+"At 1.8 ether/unit<br>" +
+"Total Cost: 12.6 ether<br>" +
+"-----------------<br>" +
+"------------------<br>" +
+"Buyer: 3<br>" +
+"Seller: 4<br>" +
+"Units: 4 @ 2.1<br>" +
+"Total: 8.4<br>" +
+"------------------<br>";
+
+var billP1 = "------------------<br>"+
+"Buyer: 1<br>"+
+"Seller: 4<br>"+
+"Units: 8 @ 2.1<br>"+
+"Total: 16.8<br>"+
+"------------------";
+
+var P4outText = "------------------<br>" +
+"Distribution:<br>Buyer 1: 8 @ 2.1<br>Buyer 3: 4 @ 2.1<br>Total: 25.2<br>" + "------------------<br>";
+
+var P2outText = "------------------<br>"+
+	"Distribution: <br>Buyer 3: 7 @ 1.8<br>Total: 12.6<br>"
++"------------------<br>";
+
+
+function normalizeEdges(){
+	for(i = 0; i < eList.length; i++){
+		eList[i].style.backgroundColor = defaultColor;
+		eList[i].style.zIndex = 5;
+	}
+	bill.innerHTML = "";
+}
+
+P1.addEventListener("click", function(){
+	normalizeEdges();
+	E14.style.backgroundColor = green;
+	E14.style.zIndex = 6;
+	bill.innerHTML = billP1;
+});
+
+P3.addEventListener("click", function(){
+	normalizeEdges();
+	E23.style.backgroundColor = green;
+	E23.style.zIndex = 6;
+	E34.style.backgroundColor = blue;
+	E34.style.zIndex = 6;
+	bill.innerHTML = billP3;
+});
+
+P4.addEventListener("click", function(){
+	normalizeEdges();
+	E14.style.backgroundColor = green;
+	E14.style.zIndex = 6;
+	E34.style.backgroundColor = green;
+	E34.style.zIndex = 6;
+
+	bill.innerHTML = P4outText;
+});
+
+
+P2.addEventListener("click", function(){
+	normalizeEdges();
+	E23.style.backgroundColor = green;
+	E23.style.zIndex = 6;
+
+	bill.innerHTML = P2outText;
+});
+
+function scaleGraph(sx){
+	g = document.getElementById("graphContainer");
+	g.style.transform = "scale(" + sx + ")";
+	v = g.childNodes;
+	for(i = 0; i < v.length; i++)
+		v[i].style.transform = "scale(" + sx + ")";
+}
+
+//scaleGraph(0.5);
+
+</script>
+<script src="./index.js"></script>
+</body>
+
+</html>
